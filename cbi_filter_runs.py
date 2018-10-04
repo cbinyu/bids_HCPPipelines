@@ -30,6 +30,6 @@ def cbi_find_unique_runs(layout,run_list):
         else:
             run_to_be_added = same_runs
             
-        unique_runs_list.append( run_to_be_added )
+        unique_runs_list = unique_runs_list + run_to_be_added
 
     return unique_runs_list
