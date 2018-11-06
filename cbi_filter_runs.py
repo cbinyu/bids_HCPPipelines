@@ -28,7 +28,7 @@ def cbi_find_unique_runs(layout,run_list):
                 run_to_be_added = normalized_runs[0]
         # if there is only one, use that one
         else:
-            run_to_be_added = same_runs
+            run_to_be_added = same_runs[0]
 
         # append to the list:
         unique_runs_list.append(run_to_be_added)
