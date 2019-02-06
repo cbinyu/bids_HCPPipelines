@@ -20,17 +20,21 @@
 #     in the host machine file system (not the Docker container).
 #
 
-baseDir=${1%/}     # directory to be processed, removing trailing slash
+baseDir=$(realpath ${1%/})     # directory to be processed, removing trailing slash
+subjectID=${baseDir#*/sub-}
 
 for f in $(find ${baseDir} -name "qa.txt"); do
   # create a temporary file to work.
   tmpfile=$(mktemp /tmp/XXXXX.qa.txt)
 
   # First lines of the new file are fixed, CBI-wide:
-  echo "# First, cd to the top level directory (including sub-XXXX)." >> ${tmpfile}
-  echo "cd ${baseDir}" >> ${tmpfile}
-  echo "" >> ${tmpfile}
-
+  # (check to see if they are already present):
+  myStr="# First, cd to the top level directory (including sub-XXXX)."
+  if [[ $(head -1 $f) != $myStr ]]; then
+    echo ${myStr} >> ${tmpfile}
+    echo "cd ${baseDir}" >> ${tmpfile}
+    echo "" >> ${tmpfile}
+  fi
 
   if (grep "/opt/HCP-Pipelines/global/templates/" $f > /dev/null); then
     echo "# Then, define the following environmental variable:" >> ${tmpfile}
@@ -38,6 +42,14 @@ for f in $(find ${baseDir} -name "qa.txt"); do
     echo "                              # (you can grab it from CBIUserData/cbishare/HCPPipelinesTemplates)" >> ${tmpfile}
     echo "" >> ${tmpfile}
   fi
+
+  # To find the path that we need to replace, first, ignore lines
+  # that start with "cd ", and then find a string: "*/sub-$subjectID*":
+  someFile=$(grep -v "^cd " $f | grep -m 1 -Eo "[[:alnum:][:punct:]]+/sub-$subjectID[[:alnum:][:punct:]]+")
+  # remove double slashes in the path, if present:
+  someFile=$(echo $someFile | sed s#//*#/#g)
+  # use python to get the common path
+  matchingStr=$( python -c "from difflib import SequenceMatcher; string1='$someFile'; string2='$baseDir'; match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2)); print(string1[match.a: match.a + match.size])" )
 
   # From the original file:
   #  1) remove the "cd /data/..." line
@@ -48,7 +60,7 @@ for f in $(find ${baseDir} -name "qa.txt"); do
   #  5) write the result to the temporary file
   sed -e "/^cd \/data\//d" \
       -e "s| /opt/HCP-Pipelines/global/templates/| \$TEMPLATEDIR/|g" \
-      -e "s| /data//${baseDir#/CBI/UserData/}/| ./|g" \
+      -e "s| ${someFile%%$matchingStr*}${matchingStr%sub-$subjectID*}[/]*sub-${subjectID}/| ./|g" \
   $f >> ${tmpfile}
 
   # copy them to the "deleteme" folder:
