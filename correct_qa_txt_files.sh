@@ -23,6 +23,11 @@
 baseDir=$(realpath ${1%/})     # directory to be processed, removing trailing slash
 subjectID=${baseDir#*/sub-}
 
+# To be able to run "find" you need to cd to a place where we have access,
+# and it is possible that the call to "completeJSONs" is done from a place
+# from which we don't have access
+cd /tmp
+
 for f in $(find ${baseDir} -name "qa.txt"); do
   # create a temporary file to work.
   tmpfile=$(mktemp /tmp/XXXXX.qa.txt)
@@ -49,7 +54,7 @@ for f in $(find ${baseDir} -name "qa.txt"); do
   # remove double slashes in the path, if present:
   someFile=$(echo $someFile | sed s#//*#/#g)
   # use python to get the common path
-  matchingStr=$( python -c "from difflib import SequenceMatcher; string1='$someFile'; string2='$baseDir'; match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2)); print(string1[match.a: match.a + match.size])" )
+  matchingStr=$( python3 -c "from difflib import SequenceMatcher; string1='$someFile'; string2='$baseDir'; match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2)); print(string1[match.a: match.a + match.size])" )
 
   # From the original file:
   #  1) remove the "cd /data/..." line

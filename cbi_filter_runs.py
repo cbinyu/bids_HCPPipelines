@@ -1,6 +1,6 @@
 #!/usr/local/miniconda/bin/python
 
-from bids.grabbids import BIDSLayout
+from bids import layout
 
 def cbi_find_unique_runs(layout,run_list):
 
@@ -14,7 +14,7 @@ def cbi_find_unique_runs(layout,run_list):
 
     for t in uniqueAcqTimes:
         # list all the runs with acq time 't':
-        same_runs = [ r for r in run_list if t == layout.get_metadata(r)["AcquisitionTime"] ]
+        same_runs = [ r for r in run_list if layout.get_metadata(r)["AcquisitionTime"] == t ]
 
         # if there are more than one runs with that acq time,
         if len( same_runs ) > 1:
@@ -23,7 +23,7 @@ def cbi_find_unique_runs(layout,run_list):
             if len( unnormalized_runs ) > 0:
                 run_to_be_added = unnormalized_runs[0]
             else:
-                # if non, get the first normalized one:
+                # if none, get the first normalized one:
                 normalized_runs = [ r for r in same_runs if 'NORM' in layout.get_metadata(r)["ImageType"] ]
                 run_to_be_added = normalized_runs[0]
         # if there is only one, use that one
